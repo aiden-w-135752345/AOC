@@ -1,1 +1,0 @@
-document.body.innerText.slice(0,-1).split("\n\n").map(v=>v.split("\n").reduce((r,v)=>r+parseInt(v),0)).sort((a,b)=>a-b).reduce((r,v)=>Math.max(r,v))

@@ -19,3 +19,8 @@ let d_3=(data,part)=>{
     var part2Groups=data.split("\n").map((v,i,a)=>a.slice(i,i+3)).filter((v,i)=>(i%3)==0);
     return[,part1Groups,part2Groups][part].map(v=>priorities.indexOf(commonItem(v[0],v[1],v[2]))).reduce((r,v)=>r+v,0);
 }
+let d_4=(data,part)=>{
+    var part1=v=>(v[0][0]>=v[1][0]&&v[0][1]<=v[1][1])||(v[0][0]<=v[1][0]&&v[0][1]>=v[1][1]);
+    var part2=v=>(v[0][0]<=v[1][0]&&v[1][0]<=v[0][1])||(v[0][0]<=v[1][1]&&v[1][1]<=v[0][1])||(v[1][0]<=v[0][0]&&v[0][0]<=v[1][1])||(v[1][0]<=v[0][1]&&v[0][1]<=v[1][1]);
+    return data.split("\n").map(v=>v.split(",").map(v=>v.split("-").map(v=>parseInt(v)))).filter([,part1,part2][part]).length
+};

@@ -24,3 +24,15 @@ let d_4=(data,part)=>{
     var part2=v=>(v[0][0]<=v[1][0]&&v[1][0]<=v[0][1])||(v[0][0]<=v[1][1]&&v[1][1]<=v[0][1])||(v[1][0]<=v[0][0]&&v[0][0]<=v[1][1])||(v[1][0]<=v[0][1]&&v[0][1]<=v[1][1]);
     return data.split("\n").map(v=>v.split(",").map(v=>v.split("-").map(v=>parseInt(v)))).filter([,part1,part2][part]).length
 };
+let d_5=(data,part)=>{
+    let stacks=data.slice(0,data.indexOf("\n\n")),instrs=data.slice(data.indexOf("\n\n")+2);
+    stacks=stacks.split("\n").map(v=>v.split("").filter((v,i)=>i%4==1));
+    stacks=Object.fromEntries(stacks.pop().map((v,i)=>[v,stacks.map(v=>v[i]).filter(v=>v!=" ").reverse()]));
+    instrs=instrs.split("\n").map(v=>v.match(/^move ([0-9]+) from ([1-9]) to ([1-9])$/).map(v=>parseInt(v)));
+    instrs.forEach(v=>{
+        let crates=stacks[v[2]].splice(-v[1],v[1]);
+        if(part==1){crates.reverse();}
+        stacks[v[3]]=stacks[v[3]].concat(crates);
+    });
+    return Object.values(stacks).map(v=>v.pop()).join("");
+};

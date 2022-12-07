@@ -36,3 +36,7 @@ let d_5=(data,part)=>{
     });
     return Object.values(stacks).map(v=>v.pop()).join("");
 };
+let d_6=(data,part)=>{
+    var len=part==1?4:14;
+    return data.split("").findIndex((v,i,a)=>a.slice(i,i+len.every((v,i,a)=>i==a.indexOf(v))))+len;
+};

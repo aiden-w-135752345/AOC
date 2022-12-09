@@ -63,3 +63,21 @@ let d_7=(data,part)=>{
 	f(root);
 	return [,part1,part2][part];
 };
+let d_8=(data,part)=>{
+	var grid=data.split("\n").map(v=>v.split("").map(v=>parseInt(v)));
+	var rows=grid.map((v,y)=>y),cols=grid[0].map((v,x)=>x),answer=0;
+	grid.forEach((row,y)=>row.forEach((v,x)=>{
+		if(part==1){
+			if(
+				rows.slice(0,y).every(y=>grid[y][x]<v)||rows.slice(y+1).every(y=>grid[y][x]<v)||
+				cols.slice(0,x).every(x=>grid[y][x]<v)||cols.slice(x+1).every(x=>grid[y][x]<v)
+			){visible++;}
+		}else{
+			let f=(a,f)=>{var i=a.findIndex(f);return i>=0?i+1:a.length;},score=
+				f(rows.slice(0,y).reverse(),y=>grid[y][x]>=v)*f(rows.slice(y+1),y=>grid[y][x]>=v)*
+				f(cols.slice(0,x).reverse(),x=>grid[y][x]>=v)*f(cols.slice(x+1),x=>grid[y][x]>=v);
+			if(score>answer){answer=score;}
+		}
+	}));
+	return answer;
+};

@@ -40,3 +40,44 @@ let d_6=(data,part)=>{
     var len=part==1?4:14;
     return data.split("").findIndex((v,i,a)=>a.slice(i,i+len.every((v,i,a)=>i==a.indexOf(v))))+len;
 };
+let d_7=(data,part)=>{
+	var root={files:{},dirs:{}},cwd;
+	data.split("\n").forEach(v=>{
+		if(v=="$ ls"){return;}
+		if(v=="$ cd /"){cwd=root;return;}
+		var m;
+		if(v=="$ cd .."){cwd=cwd.parent;return;}
+		if(m=v.match(/^\$ cd (.*)$/)){cwd=cwd.dirs[m[1]];return;}
+		if(m=v.match(/^dir (.*)$/)){cwd.dirs[m[1]]={parent:cwd,files:Object.create(null),dirs:Object.create(null)};return;}
+		if(m=v.match(/^([0-9]*) (.*)$/)){cwd.files[m[2]]=parseInt(m[1]);return;}
+		// cant get here
+	});
+	var f=d=>d.size=Object.values(d.dirs).reduce((r,v)=>r+f(v),0)+Object.values(d.files).reduce((r,v)=>r+v,0);
+	f(root);
+	let part1=0,part2=root.size,toFree=30000000-(70000000-root.size);
+	var f=d=>{
+		Object.values(d.dirs).forEach(f);
+		if(d.size<100000){part1+=d.size};
+		if(toFree<=d.size&&d.size<part2){part2=d.size;}
+	};
+	f(root);
+	return [,part1,part2][part];
+};
+let d_8=(data,part)=>{
+	var grid=document.body.innerText.slice(0,-1).split("\n").map(v=>v.split("").map(v=>parseInt(v)));
+	var rows=grid.map((v,y)=>y),cols=grid[0].map((v,x)=>x),answer=0;
+	grid.forEach((row,y)=>row.forEach((v,x)=>{
+		if(part==1){
+			if(
+				rows.slice(0,y).every(y=>grid[y][x]<v)||rows.slice(y+1).every(y=>grid[y][x]<v)||
+				cols.slice(0,x).every(x=>grid[y][x]<v)||cols.slice(x+1).every(x=>grid[y][x]<v)
+			){visible++;}
+		}else{
+			let f=(a,f)=>{var i=a.findIndex(f);return i>=0?i+1:a.length;},score=
+				f(rows.slice(0,y).reverse(),y=>grid[y][x]>=v)*f(rows.slice(y+1),y=>grid[y][x]>=v)*
+				f(cols.slice(0,x).reverse(),x=>grid[y][x]>=v)*f(cols.slice(x+1),x=>grid[y][x]>=v);
+			if(score>answer){answer=score;}
+		}
+	}));
+	return answer;
+};

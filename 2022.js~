@@ -64,7 +64,7 @@ let d_7=(data,part)=>{
 	return [,part1,part2][part];
 };
 let d_8=(data,part)=>{
-	var grid=document.body.innerText.slice(0,-1).split("\n").map(v=>v.split("").map(v=>parseInt(v)));
+	var grid=data.split("\n").map(v=>v.split("").map(v=>parseInt(v)));
 	var rows=grid.map((v,y)=>y),cols=grid[0].map((v,x)=>x),answer=0;
 	grid.forEach((row,y)=>row.forEach((v,x)=>{
 		if(part==1){

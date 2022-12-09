@@ -81,3 +81,16 @@ let d_8=(data,part)=>{
 	}));
 	return answer;
 };
+let d_9=(data,part)=>{
+	var knots=Array(part==1?2:10).fill().map(v=>[0,0]),dirs={U:[0,1],D:[0,-1],L:[-1,0],R:[1,0]};
+	var tailLocations=new Set();
+	data.split("\n").forEach(v=>{for(let i=0,dir=dirs[v[0]],n=parseInt(v.slice(2));i<n;i++){
+		knots[0][0]+=dir[0];knots[0][1]+=dir[1];
+		for(let j=1;j<knots.length;j++){
+			let delta=[knots[j-1][0]-knots[j][0],knots[j-1][1]-knots[j][1]];
+			if(Math.abs(delta[1])>1||Math.abs(delta[0])>1){knots[j][1]+=Math.sign(delta[1]);knots[j][0]+=Math.sign(delta[0]);}11111
+		}
+		tailLocations.add(knots[knots.length-1][0]+","+knots[knots.length-1][1]);
+	}});
+	return tailLocations.size;
+};

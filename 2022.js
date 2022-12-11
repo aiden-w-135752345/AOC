@@ -104,3 +104,17 @@ let d_10=(data,part)=>{
     if(part==1){let signal=0;for(let i=20;i<=220;i+=40){signal+=i*values[i];}return signal;}
     return "\n"+values.map((v,i)=>Math.abs((i-1)%40-v)<2?"#":" ").join("").match(/.{40}/g).join("\n")
 };
+let d_11=(data,part)=>{
+	var monkeys=data.split("\n\n").map(v=>v.split("\n").slice(1).map(v=>v.split(": ")[1])).map(v=>({
+		items:v[0].split(", ").map(v=>parseInt(v)),op:Function("old","return "+v[1].slice(5)+";"),
+		test:parseInt(v[2].match(/^divisible by ([0-9]+)$/)[1]),activity:0,
+		t:parseInt(v[3].match(/throw to monkey ([0-7])/)[1]),f:parseInt(v[4].match(/throw to monkey ([0-7])/)[1])
+	}));
+	var modulus=monkeys.reduce((r,v)=>r*v.test,1)
+	for(let i=0;i<(part==1?20:10000);i++){monkeys.forEach(m=>{
+		m.items.map(item=>Math.floor(m.op(item)/(part==1?3:1))).map(item=>item%modulus).forEach(item=>monkeys[(item%m.test==0)?m.t:m.f].items.push(item));
+		m.activity+=m.items.length;m.items=[];
+	});}
+	let activities=monkeys.map(v=>v.activity).sort((a,b)=>b-a);
+	return activities[0]*activities[1];
+};

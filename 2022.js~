@@ -94,3 +94,13 @@ let d_9=(data,part)=>{
 	}});
 	return tailLocations.size;
 };
+let d_10=(data,part)=>{
+    var values=[undefined],value=1;
+    data.split("\n").forEach(v=>{
+        values.push(value);
+        if(v.startsWith("addx ")){values.push(value);value+=parseInt(v.slice(4));}
+    });
+    values.push(value);
+    if(part==1){let signal=0;for(let i=20;i<=220;i+=40){signal+=i*values[i];}return signal;}
+    return "\n"+values.map((v,i)=>Math.abs((i-1)%40-v)<2?"#":" ").join("").match(/.{40}/g).join("\n")
+};

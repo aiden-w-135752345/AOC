@@ -118,3 +118,22 @@ let d_11=(data,part)=>{
 	let activities=monkeys.map(v=>v.activity).sort((a,b)=>b-a);
 	return activities[0]*activities[1];
 };
+let d_12=(data,part)=>{
+	data=data.split("\n").map(v=>v.split(""));
+	var sx,sy=data.findIndex(v=>(sx=v.indexOf("S"))>=0);
+	var ex,ey=data.findIndex(v=>(ex=v.indexOf("E"))>=0);
+	data[sy][sx]="a";data[ey][ex]="z";
+	data=data.map(v=>v.map(v=>parseInt(v,36)-10));
+	var dists=data.map(v=>v.map(v=>Infinity)),queue=[{x:ex,y:ey,d:0}];
+	dists[ey][ex]=0;
+	while(queue.length){
+		let v=queue.shift(),h=data[v.y][v.x],d=dists[v.y][v.x];
+		let f=(dx,dy)=>{
+			var x=v.x+dx,y=v.y+dy;if(y<0||y>=data.length||x<0||x>=data[0].length){return;}
+			if((data[y][x]>=h-1)&&(d+1<dists[y][x])){dists[y][x]=d+1;queue.push({x:x,y:y});}
+		};
+		f(0,-1);f(-1,0);f(1,0);f(0,1);
+	}
+	if(part==1){return dists[sy][sx];}
+	return data.reduce((r,v,y)=>v.reduce((r,v,x)=>{if(v==0&&dists[y][x]<r){return dists[y][x];}return r;},r),Infinity)
+};

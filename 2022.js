@@ -137,3 +137,19 @@ let d_12=(data,part)=>{
 	if(part==1){return dists[sy][sx];}
 	return data.reduce((r,v,y)=>v.reduce((r,v,x)=>{if(v==0&&dists[y][x]<r){return dists[y][x];}return r;},r),Infinity)
 };
+let d_13=(data,part)=>{
+	data=data.split("\n\n").map(v=>v.split("\n").map(v=>JSON.parse(v)));
+	var cmp=(a,b)=>{
+		if(typeof a=="number"&&typeof b=="number"){return a-b;}
+		if(typeof a=="number"){a=[a];}if(typeof b=="number"){b=[b];}
+		for(let i=0;i<a.length&&i<b.length;i++){let c=cmp(a[i],b[i]);if(c){return c;}}
+		return a.length-b.length;
+	};
+	if(part==1){
+		let part1=0;
+		data.forEach((v,i)=>{if(cmp(v[0],v[1])<0){part1+=i+1;}});
+		return part1;
+	}
+	data=data.flat();data.push([[2]],[[6]]);data.sort(cmp);
+	return (data.findIndex(v=>JSON.stringify(v)=="[[2]]")+1)*(data.findIndex(v=>JSON.stringify(v)=="[[6]]")+1)
+};

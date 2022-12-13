@@ -453,9 +453,45 @@ var d_18=(data,part=1)=>{
 	}
 };
 var d_19=(data,part=1)=>{
-	data=data.split("\n\n").map(v=>v.split("\n").slice(1).map(v=>v.split(",").map(v=>parseInt(v))));
-	// +++
-	return data;
+	var scanners=data.split("\n\n").map(v=>({
+        rotation:undefined,position:undefined,
+        beacons:v.split("\n").slice(1).map(v=>v.split(",").map(v=>parseInt(v)))
+    }));
+    var rotations=[
+		v=>[ v[0], v[1], v[2]],v=>[ v[0],-v[1],-v[2]],v=>[-v[0], v[1],-v[2]],
+		v=>[-v[0],-v[1], v[2]],v=>[ v[0], v[2],-v[1]],v=>[ v[0],-v[2], v[1]],
+		v=>[-v[0], v[2], v[1]],v=>[-v[0],-v[2],-v[1]],v=>[ v[1], v[0],-v[2]],
+		v=>[ v[1],-v[0], v[2]],v=>[-v[1], v[0], v[2]],v=>[-v[1],-v[0],-v[2]],
+		v=>[ v[2], v[0], v[1]],v=>[ v[2],-v[0],-v[1]],v=>[-v[2], v[0],-v[1]],
+		v=>[-v[2],-v[0], v[1]],v=>[ v[1], v[2], v[0]],v=>[ v[1],-v[2],-v[0]],
+		v=>[-v[1], v[2],-v[0]],v=>[-v[1],-v[2], v[0]],v=>[ v[2], v[1],-v[0]],
+		v=>[ v[2],-v[1], v[0]],v=>[-v[2], v[1], v[0]],v=>[-v[2],-v[1],-v[0]]
+    ];
+    scanners.forEach(scanner=>{scanner.fingerprint=scanner.beacons.map((a,i,arr)=>
+        arr.map((b,j)=>[a].map((c,k)=>[
+            (a[0]-b[0])*(b[0]-c[0])+(a[1]-b[1])*(b[1]-c[1])+(a[2]-b[2])*(b[2]-c[2]),
+            i,j,k
+        ]))
+    ).flat(2).reduce((r,v)=>{
+        (r[v[0]]=r[v[0]]||[]).push(v.slice(1));return r;
+    },{});});
+    var intersects=scanners.map((a,i)=>scanners.map(b=>{
+        let common=Object.keys(a.fingerprint).filter(k=>b.fingerprint[k]);
+        let total=0;
+        common.forEach(k=>total+=Math.min(a.fingerprint[k].length,b.fingerprint[k].length));
+        if(total<3*12**2){return;}
+        return [common.reduce((r,k)=>r+a.fingerprint[k].length*b.fingerprint[k].length,0)];
+    }));
+    return intersects.flat().filter(v=>v);
+    /*
+    scanners[0].position=[0,0,0];scaneers[0].rotation=rotations[0];
+    while(1){
+        let totry=data.filter(v=>!v.rotation);
+        if(!totry.length){break;}
+        let got1=totry.some(scanner=>scanner);
+        if(!got1){break;}
+    }
+	return data;*/
 };
 var d_20=(data,part=1)=>{
 	{let i=data.indexOf("\n\n");var rule=data.slice(0,i);data=data.slice(i+2).split("\n");}

@@ -153,3 +153,24 @@ let d_13=(data,part)=>{
 	data=data.flat();data.push([[2]],[[6]]);data.sort(cmp);
 	return (data.findIndex(v=>JSON.stringify(v)=="[[2]]")+1)*(data.findIndex(v=>JSON.stringify(v)=="[[6]]")+1)
 };
+var d_14=(data,part=1)=>{
+    var data=data.split("\n").map(v=>v.split(" -> ").map(v=>v.split(",").map(v=>parseInt(v))));
+    let floor=data.flat(1).reduce((r,v)=>Math.max(r,v[1]),0);
+    data=data.map(v=>v.map(v=>[v[0]-(500-floor)+2,v[1]]));
+    let grid=Array(floor+3).fill().map(v=>Array(2*floor+5).fill(" "));
+    grid[floor+2].fill("#");grid[0][floor+2]="+";
+    data.forEach(v=>{var p=v[0];for(var i=1;i<v.length;i++){
+        while(p[0]<v[i][0]){grid[p[1]][p[0]]="#";p[0]++;}
+        while(p[0]>v[i][0]){grid[p[1]][p[0]]="#";p[0]--;}
+        while(p[1]<v[i][1]){grid[p[1]][p[0]]="#";p[1]++;}
+        while(p[1]>v[i][1]){grid[p[1]][p[0]]="#";p[1]--;}
+    }grid[p[1]][p[0]]="#";});
+    var p=[floor+2,0],dropped=0;
+    while(1){
+        p[1]++;let row=grid[p[1]];
+        if(row[p[0]]==" "){}else if(row[p[0]-1]==" "){p[0]--;}else if(row[p[0]+1]==" "){p[0]++;}
+        else if(p[1]==1){dropped++;break;}else{grid[p[1]-1][p[0]]="o";dropped++;p=[floor+2,0];}
+        if(p[1]>=floor&&part==1){break;}
+    }
+    return dropped;
+};

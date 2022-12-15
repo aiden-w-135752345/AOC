@@ -155,7 +155,7 @@ let d_13=(data,part)=>{
 };
 var d_14=(data,part=1)=>{
     var data=data.split("\n").map(v=>v.split(" -> ").map(v=>v.split(",").map(v=>parseInt(v))));
-    let floor=0;data.flat(1).forEach(v=>{floor=Math.max(floor,v[1]);});
+    let floor=data.flat(1).reduce((r,v)=>Math.max(r,v[1]),0);
     data=data.map(v=>v.map(v=>[v[0]-(500-floor)+2,v[1]]));
     let grid=Array(floor+3).fill().map(v=>Array(2*floor+5).fill(" "));
     grid[floor+2].fill("#");grid[0][floor+2]="+";

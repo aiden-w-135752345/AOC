@@ -174,3 +174,34 @@ var d_14=(data,part=1)=>{
     }
     return dropped;
 };
+var d_15=(data,part)=>{
+	data=data.split("\n").map(v=>v.match(/^Sensor at x=([-0-9]+), y=([-0-9]+): closest beacon is at x=([-0-9]+), y=([-0-9]+)/).slice(1).map(v=>parseInt(v)));
+	data=data.map(v=>({x:v[0],y:v[1],d:Math.abs(v[0]-v[2])+Math.abs(v[1]-v[3])}));
+	if(part==1){
+		let segments=data.map(v=>({x:v.x,d:v.d-Math.abs(v.y-2000000)})).filter(v=>v.d>0).map(v=>({min:v.x-v.d,max:v.x+v.d})).sort((a,b)=>a.min-b.min);
+			for(let i=0;i<segments.length-1;){
+				if(segments[i].max+1<segments[i+1].min-1){i++;continue;}
+				segments[i].max=Math.max(segments[i].max,segments[i+1].max);segments.splice(i+1,1);
+			}
+			return segments.reduce((r,v)=>r+v.max-v.min,0);
+	}
+	let points=[],attemptPoint=(x,y)=>data.every(v=>v.d<Math.abs(v.x-x)+Math.abs(v.y-y));
+	data.forEach(v1=>data.forEach(v2=>[1,-1].forEach(pm1=>[1,-1].forEach(pm2=>[1,-1].forEach(pm3=>[1,-1].forEach(pm4=>{
+		// abs(x-v1.x)+abs(y-v1.y)=v1.d+1
+		// abs(x-v2.x)+abs(y-v2.y)=v2.d+1
+		// pm1*(x-v1.x)+pm2*(y-v1.y)=v1.d+1
+		// pm3*(x-v2.x)+pm4*(y-v2.y)=v2.d+1
+		// pm1*x+pm2*y=v1.d+1+pm1*v1.x+pm2*v1.y
+		// pm3*x+pm4*y=v2.d+1+pm3*v2.x+pm4*v2.y
+		// pm1*pm2*x+y=pm2*(v1.d+1+pm1*v1.x+pm2*v1.y)
+		// pm3*pm4*x+y=pm4*(v2.d+1+pm3*v2.x+pm4*v2.y)
+		// (pm1*pm2-pm3*pm4)*x=pm2*(v1.d+1+pm1*v1.x+pm2*v1.y)-pm4*(v2.d+1+pm3*v2.x+pm4*v2.y)
+		if(pm1*pm2==pm3*pm4){return;}
+		let x=(pm2*(v1.d+1+pm1*v1.x+pm2*v1.y)-pm4*(v2.d+1+pm3*v2.x+pm4*v2.y))/(pm1*pm2-pm3*pm4);
+		if(0>x||x>4000000){return;}
+		let dy=(v1.d+1-Math.abs(x-v1.x));
+		if(0<=v1.y+dy&&v1.y+dy<=4000000&&attemptPoint(x,v1.y+dy)){points.push([x,v1.y+dy]);}
+		if(0<=v1.y-dy&&v1.y-dy<=4000000&&attemptPoint(x,v1.y-dy)){points.push([x,v1.y-dy]);}
+		}))))));
+	return points[0][0]*4000000+points[0][1];
+};

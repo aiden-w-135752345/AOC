@@ -205,3 +205,66 @@ var d_15=(data,part)=>{
 		}))))));
 	return points[0][0]*4000000+points[0][1];
 };
+var d_16=async(data,part)=>{
+    var start=performance.now();
+    data=data.split("\n").map(v=>v.match(/^Valve (..) has flow rate=([^;]+); tunnels? leads? to valves? (.+)$/).slice(1)).map(v=>[v[0],parseInt(v[1]),v[2].split(", ")]);
+    console.log(performance.now()-start,"computing adj. matrix...");
+    {
+        let keys=data.map(v=>v[0]);var valves=data.map(v=>v[1]);
+        var matrix=data.map(v=>keys.map(k=>v[2].includes(k)?1:Infinity));data.forEach((v,i)=>v[i]=0);
+        let queue=matrix.map((v,i)=>matrix.map((v,j)=>i+","+j)).flat(1);
+        let checkUpdate=(i,j,k)=>{
+            if(matrix[i][j]+matrix[j][k]<matrix[i][k]){matrix[k][i]=matrix[i][k]=matrix[i][j]+matrix[j][k];if(!queue.includes(i+","+k)){queue.push(i+","+k);}}
+        };
+        while(queue.length){
+            let decreased=queue.pop().split(",").map(v=>parseInt(v));
+            matrix.forEach((v,i)=>checkUpdate(decreased[0],decreased[1],i));
+        }
+        let keep=keys.map((v,i)=>v=="AA"||valves[i]);
+        keys=keys.filter((v,i)=>keep[i]);valves=valves.filter((v,i)=>keep[i]);matrix=matrix.filter((v,i)=>keep[i]).map(v=>v.filter((v,i)=>keep[i]));
+        var start=keys.indexOf("AA");
+    }
+    console.log(performance.now()-start,"got adj. matrix, computing flow rates...");await new Promise(requestAnimationFrame);
+    var flowRates=Array(2**valves.length).fill().map((v,i)=>valves.reduce((r,valve,j)=>r+((i&(1<<j))?valve:0),0));
+    console.log(performance.now()-start,"got flow rates, computing DP table...");await new Promise(requestAnimationFrame);
+    {
+		let eruption=part==1?30:26;
+        var bestDP=Array(eruption+1).fill().map(v=>Array(2**valves.length).fill().map(v=>Array(valves.length).fill(-Infinity)));
+        bestDP[0][0][start]=0;
+        let queue={length:0};
+        queue.push=function(item){var node={item:item};if(this.last){this.last=this.last.next=node;}else{this.last=this.first=node;}this.length++;};
+        queue.shift=function(){var node=this.first;if(node){this.first=node.next;if (!(--this.length)){this.last=undefined;}return node.item;}};
+        queue.push([0,0,start,0]);
+        while(queue.length){
+            let [time,opened,pos,prevPressure]=queue.shift(),currentPressure=bestDP[time][opened][pos];
+            if(prevPressure<currentPressure){continue;}
+            valves.forEach((v,i)=>{
+                if(i==start){return;}
+                if(i==pos){
+                    let nextPressure=currentPressure+flowRates[opened],nextOpened=opened|(1<<pos);
+                    if(bestDP[time+1][nextOpened][pos]<nextPressure){
+                        bestDP[time+1][nextOpened][pos]=nextPressure;
+                        if(time+1!=eruption){queue.push([(time+1),nextOpened,pos,nextPressure]);}
+                    }
+                    return;
+                }
+                let duration=matrix[pos][i],end=time+duration;if(end>eruption){return;}
+                let nextPressure=currentPressure+flowRates[opened]*duration;
+                if(bestDP[end][opened][i]<nextPressure){
+                    bestDP[end][opened][i]=nextPressure;
+                    if(end!=eruption){queue.push([end,opened,i,nextPressure]);}
+                }
+            });
+        }
+        bestDP=bestDP[eruption].map(v=>v.reduce((r,v)=>Math.max(r,v),0));
+    }
+    if(part==1){return bestDP.reduce((r,v)=>Math.max(r,v),0);}
+    console.log(performance.now()-start,"got DP table, dividing up valves...");await new Promise(requestAnimationFrame);
+    let best=0,lastPercent=0;
+    for(let i=0;i<3**valves.length;i++){
+        let s=i.toString(3),a=parseInt(s.replace(/1/g,"0").replace(/2/g,"1"),2),b=parseInt(s.replace(/2/g,"0"),2);
+        let pressure=bestDP[a]+bestDP[b];if(best<pressure){best=pressure;}
+        if(i&0x100){let percent=Math.round(100*i/(3**valves.length));if(percent!=lastPercent){console.log((lastPercent=percent)+"%");await new Promise(requestAnimationFrame);}}
+    };
+    return best;
+};

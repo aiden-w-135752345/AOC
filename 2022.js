@@ -268,3 +268,84 @@ var d_16=async(data,part)=>{
     };
     return best;
 };
+let d_17=(data,part)=>{
+	var jets=data.split("").map(v=>({">":1,"<":-1})[v]);
+	var rocks=[
+		// flipped so that the 0th item is the bottom of the
+		// rock, and the LSB is the left side of the rock
+		[0b1111],[0b010,0b111,0b010],[0b111,0b100,0b100],[0b1,0b1,0b1,0b1],[0b11,0b11]
+	];
+	var grid=[0],jet=0,states=[],heights=[];
+	for(let i=0;i<(part==1?2022:Infinity);i++){
+		let rock=rocks[i%rocks.length];
+		let x=2,y=grid.findLastIndex(v=>v!=0)+4;
+		while(grid.length<y+4){grid.push(0);}
+		if(part==2){
+			let accessible=grid.map(v=>0),stack=[],addToStack=(x,y)=>{
+				if(x<0||y<0||x>=7||y>=grid.length||(grid[y]&(1<<x))){return;}
+				if(!(accessible[y]&(1<<x))){accessible[y]|=(1<<x);stack.push([x,y]);}
+			};
+			addToStack(0,grid.length-8);addToStack(1,grid.length-8);addToStack(2,grid.length-8);addToStack(3,grid.length-8);
+			addToStack(4,grid.length-8);addToStack(5,grid.length-8);addToStack(6,grid.length-8);addToStack(7,grid.length-8);
+			while(stack.length){let [x,y]=stack.pop();addToStack(x+1,y);addToStack(x,y+1);addToStack(x-1,y);addToStack(x,y-1);}
+			accessible=accessible.slice(accessible.findIndex(v=>v!=0),accessible.findLastIndex(v=>v!=127)+1)
+			let state=(i%rocks.length)+","+jet+","+accessible.join(",");
+			let last=states.indexOf(state);
+			if(last!=-1){
+				let trillion=1000000000000,modulus=(trillion-last)%(i-last);
+				return heights[last+modulus]+(grid.length-7-heights[last])*(trillion-last-modulus)/(i-last);
+			}
+			states.push(state);heights.push(grid.findLastIndex(v=>v!=0)+1);
+		}
+		/*let log=()=>{
+			let copy=grid.slice();
+			rock.forEach((v,i)=>copy[y+i]|=(v<<x));
+			console.log(copy.map(v=>"\n|"+v.toString(2).padStart(7,0).replace(/0/g,".").replace(/1/g,"#").split("").reverse().join("")+"|").reverse().join(""));
+		};*/
+		for(let j=0;;j++){
+			if(jet==jets.length){jet=0;}
+			x+=jets[jet];
+			if(x<0||rock.some((v,i)=>(v<<x)&(grid[y+i]|0x80))){x-=jets[jet];}
+			jet++;y--;
+			if(y<0||rock.some((v,i)=>(v<<x)&grid[y+i])){y++;break;}
+		}
+		rock.forEach((v,i)=>grid[y+i]|=(v<<x));
+	}
+	//console.log(grid.map(v=>"\n|"+v.toString(2).padStart(7,0).replace(/0/g,".").replace(/1/g,"#").split("").reverse().join("")+"|").reverse().join(""));
+	//console.log(grid.map((v,i)=>i).filter(i=>grid[i]==127).map((v,i,a)=>v-a[i+1]).join("\n"));
+	console.log(states);
+	return grid.findLastIndex(v=>v!=0)+1;
+};
+let d_18=(data,part)=>{
+	data=data.split("\n").map(v=>v.split(",").map(v=>parseInt(v)));
+	let min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+	data.forEach(v=>v.forEach((v,i)=>{min[i]=Math.min(min[i],v);max[i]=Math.max(max[i],v);}));
+	max=[max[0]-min[0]+3,max[1]-min[1]+3,max[2]-min[2]+3]
+	var grid=Array(max[0]).fill().map(v=>Array(max[1]).fill().map(v=>Array(max[2]).fill(0)));
+	// 0: air 1: steam 2: lava
+	data=data.map(v=>[v[0]-min[0]+1,v[1]-min[1]+1,v[2]-min[2]+1]);
+	data.forEach(v=>{grid[v[0]][v[1]][v[2]]=2;});
+	if(part==1){
+		let surface=0;
+		data.forEach(v=>{
+			if(!grid[v[0]+1][v[1]][v[2]]){surface++;}if(!grid[v[0]][v[1]+1][v[2]]){surface++;}if(!grid[v[0]][v[1]][v[2]+1]){surface++;}
+			if(!grid[v[0]-1][v[1]][v[2]]){surface++;}if(!grid[v[0]][v[1]-1][v[2]]){surface++;}if(!grid[v[0]][v[1]][v[2]-1]){surface++;}
+		});
+		return surface;
+	}else{
+		let stack=[[0,0,0]],addToStack=(x,y,z)=>{
+			if(x<0||y<0||z<0||x>=max[0]||y>=max[1]||z>=max[2]){return;}let gxy=grid[x][y];if(gxy[z]==0){gxy[z]=1;stack.push([x,y,z]);}
+		};
+		grid[0][0][0]=1;
+		while(stack.length){
+			let [x,y,z]=stack.pop();
+			addToStack(x+1,y,z);addToStack(x,y+1,z);addToStack(x,y,z+1);addToStack(x-1,y,z);addToStack(x,y-1,z);addToStack(x,y,z-1);
+		}
+		let surface=0;
+		data.forEach(v=>{
+			if(grid[v[0]+1][v[1]][v[2]]==1){surface++;}if(grid[v[0]][v[1]+1][v[2]]==1){surface++;}if(grid[v[0]][v[1]][v[2]+1]==1){surface++;}
+			if(grid[v[0]-1][v[1]][v[2]]==1){surface++;}if(grid[v[0]][v[1]-1][v[2]]==1){surface++;}if(grid[v[0]][v[1]][v[2]-1]==1){surface++;}
+		});
+		return surface;
+	}
+};

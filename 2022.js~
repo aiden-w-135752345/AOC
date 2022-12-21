@@ -349,3 +349,49 @@ let d_18=(data,part)=>{
 		return surface;
 	}
 };
+var d_19=(data,part)=>{
+	data=data.split("\n").map(bp=>bp.match(/^Blueprint ([0-9]+): Each ore robot costs ([0-9]+) ore. Each clay robot costs ([0-9]+) ore. Each obsidian robot costs ([0-9]+) ore and ([0-9]+) clay. Each geode robot costs ([0-9]+) ore and ([0-9]+) obsidian.$/).slice(1).map(v=>parseInt(v))).map(bp=>({
+		id:bp[0],ore2ore:bp[1],ore2clay:bp[2],ore2obsidian:bp[3],
+		clay2obsidian:bp[4],ore2geode:bp[5],obsidian2geode:bp[6]
+	}));
+	if(part==2){data=data.slice(0,3);}
+	var workerUrl=URL.createObjectURL(new Blob([`var time=${part==1?24:32};self.onmessage = `+function(event) {
+		var bp=event.data;
+		var maxOreSpend=Math.max(bp.ore2ore,bp.ore2clay,bp.ore2obsidian,bp.ore2geode);
+		var maxGeodes=0;
+		var dfs=(timeLeft,{oreBots,clayBots,obsidianBots,	ore,clay,obsidian,geodes})=>{
+			if(timeLeft==1){maxGeodes=Math.max(maxGeodes,geodes);return}// no point building in the last minute
+			if(geodes+(timeLeft-1)*timeLeft/2<maxGeodes){return;}
+			if(ore>=bp.ore2geode&&obsidian>=bp.obsidian2geode){dfs(timeLeft-1,{
+				oreBots,clayBots,obsidianBots,
+				ore:ore+oreBots-bp.ore2geode,clay:clay+clayBots,obsidian:obsidian+obsidianBots-bp.obsidian2geode,geodes:geodes+timeLeft-1
+			});}
+			if(ore>=bp.ore2obsidian&&clay>=bp.clay2obsidian&&timeLeft*obsidianBots+obsidian<=timeLeft*bp.obsidian2geode){dfs(timeLeft-1,{
+				oreBots,clayBots,obsidianBots:obsidianBots+1,
+				ore:ore+oreBots-bp.ore2obsidian,clay:clay+clayBots-bp.clay2obsidian,obsidian:obsidian+obsidianBots,geodes:geodes
+			});}
+			if(ore>=bp.ore2clay&&timeLeft*clayBots+clay<=timeLeft*bp.clay2obsidian){dfs(timeLeft-1,{
+				oreBots,clayBots:clayBots+1,obsidianBots,
+				ore:ore+oreBots-bp.ore2clay,clay:clay+clayBots,obsidian:obsidian+obsidianBots,geodes:geodes
+			});}
+			if(ore>=bp.ore2ore&&timeLeft*oreBots+ore<=timeLeft*maxOreSpend){dfs(timeLeft-1,{
+				oreBots:oreBots+1,clayBots,obsidianBots,
+				ore:ore+oreBots-bp.ore2ore,clay:clay+clayBots,obsidian:obsidian+obsidianBots,geodes:geodes
+			});}
+			dfs(timeLeft-1,{
+				oreBots,clayBots,obsidianBots,
+				ore:ore+oreBots,clay:clay+clayBots,obsidian:obsidian+obsidianBots,geodes:geodes
+			});
+		};
+		var start=performance.now();
+		console.log(`bp ${bp.id} start`);
+		dfs(time,{oreBots:1,clayBots:0,obsidianBots:0,	ore:0,clay:0,obsidian:0,geodes:0});
+		console.log(`bp ${bp.id} done: ${maxGeodes} geodes (computed in ${performance.now()-start}ms)`);
+		self.postMessage([bp.id,maxGeodes]);
+	}],{type:"text/javascript"}));
+	Promise.all(data.map(bp=>new Promise(resolve=>{
+		var worker=new Worker(workerUrl);
+		worker.onmessage=e=>{resolve(e.data);worker.terminate();};
+		worker.postMessage(bp);
+	}))).then(v=>part==1?v.reduce((r,v)=>r+v[0]*v[1],0):v.reduce((r,v)=>r*v[1],1)).then(console.log);
+};

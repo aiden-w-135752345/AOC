@@ -395,3 +395,41 @@ var d_19=(data,part)=>{
 		worker.postMessage(bp);
 	}))).then(v=>part==1?v.reduce((r,v)=>r+v[0]*v[1],0):v.reduce((r,v)=>r*v[1],1)).then(console.log);
 };
+var d_20=(data,part)=>{
+	data=data.split("\n").map(v=>[parseInt(v)*(part==1?1:811589153)]);
+	var mixOrder=data.slice(),mix=v=>{
+		var start=data.indexOf(v);data.splice(start,1);
+		let end=start+v[0];end=end%data.length+(end<0?data.length:0);
+		data.splice(end,0,v);
+	};
+	if(part==1){mixOrder.forEach(mix);}else{for(let i=0;i<10;i++){mixOrder.forEach(mix);}}
+	{let i=data.findIndex(v=>!v[0]);return data[(i+1000)%data.length][0]+data[(i+2000)%data.length][0]+data[(i+3000)%data.length][0];}
+};
+var d_21=(data,part)=>{
+	data=Object.fromEntries(data.split("\n").map(v=>v.split(": ")).map(v=>{
+		var m=v[1].match(/^([^ ]*) (.) ([^ ]*)$/);return [v[0],m?m.slice(1):parseInt(v[1])];
+	}));
+	if(part==2){data.root[1]="-";}
+	var fsimplify=f=>{
+		var sign=Math.sign(f.n*f.d),a=Math.abs(f.n),b=Math.abs(f.d);
+		while(a){let max=Math.max(a,b),min=Math.min(a,b);a=max%min;b=min;}
+		return {n:sign*Math.abs(f.n)/b,d:Math.abs(f.d)/b};
+	};
+	var fadd=(f,i)=>fsimplify({n:f.n+i*f.d,d:f.d}),fmul=(f,i)=>fsimplify({n:f.n*i,d:f.d}),fdiv=(f,i)=>fsimplify({n:f.n,d:f.d*i});
+	data=Object.fromEntries(Object.entries(data).map(v=>[v[0],typeof v[1]=="object"?function(){
+		var l=this[v[1][0]](),lc=typeof l=="number",r=this[v[1][2]](),rc=typeof r=="number";
+		switch(v[1][1]){
+			case "+":if(lc&&rc){return l+r;}else if(rc&&!lc){return {m:l.m,  b:fadd(l.b,+r)};}
+			else if(lc&&!rc){return {m:  r.m,b:fadd(r.b,l)};}else{throw "nonlinear";}
+			case "-":if(lc&&rc){return l-r;}else if(rc&&!lc){return {m:l.m,  b:fadd(l.b,-r)};}
+			else if(lc&&!rc){return {m:fmul(r.m,-1),b:fadd(fmul(r.b,-1),l)};}else{throw "nonlinear";}
+			case "*":if(lc&&rc){return l*r;}else if(rc&&!lc){return {m:fmul(l.m,r),b:fmul(l.b,r)};}
+			else if(lc&&!rc){return {m:fmul(r.m,l),b:fmul(r.b,l)};}else{throw "nonlinear";}
+			case "/":if(lc&&rc){return l/r;}else if(rc&&!lc){return {m:fdiv(l.m,r),b:fdiv(l.b,r)};}
+			else{throw "nonlinear";}
+		}
+	}:()=>v[1]]));
+	if(part==2){data.humn=()=>({m:{n:1,d:1},b:{n:0,d:1}});}
+	data=data.root();
+	if(part==1){return data;}else{return [data,-(data.b.n/data.b.d)/(data.m.n/data.m.d)];}
+};

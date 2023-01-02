@@ -433,3 +433,60 @@ var d_21=(data,part)=>{
 	data=data.root();
 	if(part==1){return data;}else{return [data,-(data.b.n/data.b.d)/(data.m.n/data.m.d)];}
 };
+var d_22=((data,part)=>{
+	data=data.split("\n\n");
+	var grid=data[0].split("\n").map(v=>v),instrs=data[1].split(/([LR])/);
+	var wraps=part==1?{
+		">":y=>{let row=grid[y].split("");return{in:row.length-1,out:[row.findIndex(v=>v!=" "),y],dir:">"};},
+		"v":x=>({in:grid.findLastIndex(v=>x<v.length&&v[x]!=" "),out:[x,grid.findIndex(v=>v[x]!=" ")],dir:"v"}),
+		"<":y=>{let row=grid[y].split("");return{in:row.findIndex(v=>v!=" "),out:[row.length-1,y],dir:"<"};},
+		"^":x=>({in:grid.findIndex(v=>v[x]!=" "),out:[x,grid.findLastIndex(v=>x<v.length&&v[x]!=" ")],dir:"^"}),
+	}:{
+/*      11
+     45904
+    090909
+   +------
+  0|\ abbc
+ 49| \deef
+ 50|  de
+ 99|  gf
+100|dggf\
+149|ahhc \
+150|ah
+199|bc  */
+		">":y=>y<50?{in:149,out:[null,null],dir:"<"}:y<100?{in: 99,out:[null,null],dir:"^"}:y<150?{in: 99,out:[null,null],dir:"<"}:{in: 49,out:[null,null],dir:"^"},
+		"v":x=>x<50?{in:199,out:[null,null],dir:"v"}:x<100?{in:149,out:[null,null],dir:"<"}:      {in: 49,out:[null,null],dir:"<"},
+		"<":y=>y<50?{in: 50,out:[null,null],dir:">"}:y<100?{in: 50,out:[null,null],dir:"v"}:y<150?{in:  0,out:[null,null],dir:">"}:{in:  0,out:[null,null],dir:"v"},
+		"^":x=>x<50?{in:100,out:[null,null],dir:">"}:x<100?{in:  0,out:[null,null],dir:">"}:      {in:  0,out:[null,null],dir:"^"}
+	};
+	var pos=[grid[0].split("").findIndex(v=>v!=" "),0],dir=">";
+	var logGrid=[[" ",0,1],[" ",2,""],[3,4,""],[5,"",""]].map((v,i)=>Array(50).fill().map(_=>v.map(v=>Array(50).fill(v)).flat())).flat();
+	logGrid[pos[1]][pos[0]]=dir;
+	instrs.forEach((v,i)=>{
+		if(i%2){dir=(v=="R"?{">":"v","v":"<","<":"^","^":">"}:{">":"^","v":">","<":"v","^":"<"})[dir];return;}
+		for(i=0,v=parseInt(v);i<v;i++){
+			let newPos=pos.slice(),newDir=dir,delta={">":1,"v":1,"<":-1,"^":-1}[dir],axis={">":0,"v":1,"<":0,"^":1}[dir],wrap=wraps[dir](pos[1-axis]);
+			newPos[axis]+=delta;
+let log=0;
+			if(pos[axis]==wrap.in){logGrid[pos[1]][pos[0]]=dir;newPos=wrap.out;newDir=wrap.dir;if(newPos[0]==null||newPos[1]==null){throw [dir,pos[1-axis]]}logGrid[newPos[1]][newPos[0]]=newDir;}
+			if(grid[newPos[1]][newPos[0]]=="#"){break;}
+			pos=newPos;dir=newDir;
+		}
+	});
+	console.log(logGrid.map((v,y)=>"\n"+/*y+"\t"+*/v.join("")).join(""));
+	return 1000*(pos[1]+1)+4*(pos[0]+1)+">v<^".indexOf(dir);
+})(1?document.body.innerText.slice(0,-1):`        ...#
+        .#..
+        #...
+        ....
+...#.......#
+........#...
+..#....#....
+..........#.
+        ...#....
+        .....#..
+        .#......
+        ......#.
+
+10R5L5R10L4R5L5
+`,2);// 163144 too high

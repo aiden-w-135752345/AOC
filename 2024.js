@@ -1,7 +1,6 @@
 /// <reference lib="ESNext" />
 // data=document.body.innerText.slice(0,-1);
 
-
 /** @param {string} data @param {number} part */
 var d_1=(data,part)=>{
     const unsorted=data.split("\n").map(v=>v.split("   ").map(v=>parseInt(v)));
@@ -104,6 +103,7 @@ var d_5=(data,part)=>{
         return r+update[(update.length-1)/2];
     },0);
 }
+
 /** @param {string} data @param {number} part */
 var d_6=(data,part)=>{
     const grid=data.split("\n"),width=grid[0].length,height=grid.length;
@@ -142,4 +142,15 @@ var d_6=(data,part)=>{
             pos[0]+=dir[0];pos[1]+=dir[1];
         }
     }).length;
+}
+
+/** @param {string} data @param {number} part */
+var d_7=(data,part)=>{
+    return data.split("\n").map(v=>v.split(": ")).reduce((r,[valueStr,operandsStr])=>{
+        const value=parseInt(valueStr),operands=operandsStr.split(" ").map(v=>parseInt(v));
+        const results=operands.slice(1).reduce((r,right)=>r.flatMap(
+            left=>[left+right,left*right].concat(part==1?[]:[left*10**(Math.floor(1+Math.log10(right)))+right])
+        ),[operands[0]]);
+        return r+(results.includes(value)?value:0);
+    },0);
 }

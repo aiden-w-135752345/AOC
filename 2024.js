@@ -154,3 +154,88 @@ var d_7=(data,part)=>{
         return r+(results.includes(value)?value:0);
     },0);
 }
+
+/** @param {string} data @param {number} part */
+var d_8=(data,part)=>{
+    const grid=data.split("\n"),width=grid[0].length,height=grid.length;
+    if(!grid.every(v=>v.length==width)){throw "not rectangle";}
+    /** @type {Map<string,{x:number,y:number}[]>}*/
+    const antennas=new Map;
+    const antinodes=grid.map((v,y)=>v.split("").map((v,x)=>{
+        if(v==".")return false;
+        const list=antennas.get(v)||[];
+        list.push({x,y});
+        antennas.set(v,list);
+        return false;
+    }));
+    antennas.entries().forEach(([_,positions])=>positions.forEach(a=>positions.forEach(b=>{
+        const dx=a.x-b.x,dy=a.y-b.y
+        if(dx==0&&dy==0){return;}
+        if(part==1){
+            const x=a.x+dx,y=a.y+dy;
+            if(0<=x&&x<width&&0<=y&&y<height){antinodes[y][x]=true;}
+        }
+        if(part==2){
+            for(let i=-(width+height);i<(width+height);i++){
+                const x=a.x+i*dx,y=a.y+i*dy;
+                if(0<=x&&x<width&&0<=y&&y<height){antinodes[y][x]=true;}
+            }    
+        }
+    })));
+    return antinodes.reduce((r,v)=>v.reduce((r,v)=>r+(v?1:0),r),0);
+}
+
+/** @param {string} data @param {number} part */
+var d_9=(data,part)=>{
+    /** @param {number[]} heap @param {number} v */
+    const heappush=(heap,v)=>{
+        heap.push(v);
+        for(let node=heap.length-1;node>0;){
+            const parent=(node-1)>>1;
+            if(heap[parent]<=heap[node]){return;}
+            const tmp=heap[parent];heap[parent]=heap[node];heap[node]=tmp;
+            node=parent;
+        }
+    };
+    /** @param {number[]} heap */
+    const heappop=heap=>{
+        heap[0]=heap.pop();
+        let root=0;
+        while(1){
+            let child = root*2+1;
+            if(child>=heap.length){return;}
+            if(child+1 < heap.length && heap[child] > heap[child+1]){child = child + 1;}
+            if(heap[root] <= heap[child]){return;}
+            const tmp=heap[root];heap[root]=heap[child];heap[child]=tmp;
+            root = child;
+        }
+    };
+    /** @type {number[][]} */const free=Array(10).fill().map(v=>[]);
+    /** @type {{idx:number,len:number,id:number}[]} */const files=[];
+    data.split("").reduce((r,v,i)=>{
+        const len=parseInt(v);
+        if(i&1){
+            heappush(free[len],r);
+        }else{
+            const id=i>>1;
+            if(part==1){
+                files.push(...Array(len).fill().map((_,i)=>({idx:r+i,len:1,id:id})));
+            }else{
+                files.push({idx:r,len:len,id:id});
+            }
+            
+        }
+        return r+len;
+    },0);
+    files.reverse().forEach(file=>{
+        let destLen=-1,destIdx=Infinity;
+        for(let len=file.len;len<10;len++){
+            const idx=free[len][0];
+            if(free[len].length&&idx<destIdx){destLen=len;destIdx=idx;}
+        }
+        if(destIdx>file.idx){return;}
+        file.idx=destIdx;
+        heappop(free[destLen]);heappush(free[destLen-file.len],destIdx+file.len);
+    });
+    return files.reduce((r,v)=>r+v.id*(v.len*(v.len-1+v.idx*2))/2,0);
+}

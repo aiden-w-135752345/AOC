@@ -223,7 +223,6 @@ var d_9=(data,part)=>{
             }else{
                 files.push({idx:r,len:len,id:id});
             }
-            
         }
         return r+len;
     },0);
@@ -238,4 +237,44 @@ var d_9=(data,part)=>{
         heappop(free[destLen]);heappush(free[destLen-file.len],destIdx+file.len);
     });
     return files.reduce((r,v)=>r+v.id*(v.len*(v.len-1+v.idx*2))/2,0);
+}
+
+/** @param {string} data @param {number} part */
+var d_10=(data,part)=>{
+    const grid=data.split("\n"),width=grid[0].length,height=grid.length;
+    if(!grid.every(v=>v.length==width)){throw "not rectangle";}
+    const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+    return grid.reduce((r,v,y)=>v.split("").reduce((r,v,x)=>{
+        if(v!="0"){return r;}
+        const ends="123456789".split("").reduce((r,step)=>r.flatMap(([x,y])=>dirs.map(([dx,dy])=>[x+dx,y+dy])).filter(
+            ([x,y])=>0<=x&&x<width&&0<=y&&y<height&&grid[y][x]==step
+        ),[[x,y]]).map(v=>v.join(","));
+        return r+(part==1?new Set(ends).size:ends.length);
+    },r),0);
+}
+
+/** @param {string} data @param {number} part */
+var d_11=(data,part)=>{
+    /** @type {Map<number,number>}*/
+    var stones=new Map();
+    data.split(" ").map(v=>parseInt(v)).forEach(v=>stones.set(v,(stones.get(v)||0)+1));
+    let max=0;
+    for(let i=0;i<(part==1?25:75);i++){
+        const prev=stones,next=new Map();
+        prev.forEach((count,stone)=>{
+            max=Math.max(max,stone);
+            if(stone==0){next.set(1,(next.get(1)||0)+count);return;}
+            const digits=Math.floor(1+Math.log10(stone));
+            if(digits%2==0){
+                const split=10**(digits/2),low=stone%split,high=Math.floor(stone/split);
+                next.set(low,(next.get(low)||0)+count);
+                next.set(high,(next.get(high)||0)+count);
+            }else{
+                const insert=stone*2024;
+                next.set(insert,(next.get(insert)||0)+count);    
+            }
+        });
+        stones=next;
+    };
+    return stones.values().reduce((r,v)=>r+v,0);
 }

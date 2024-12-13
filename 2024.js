@@ -278,3 +278,53 @@ var d_11=(data,part)=>{
     };
     return stones.values().reduce((r,v)=>r+v,0);
 }
+
+/** @param {string} data @param {number} part */
+var d_12=(data,part)=>{
+    const grid=data.split("\n").map(v=>v.split(""));
+    const width=grid[0].length,height=grid.length;
+    if(!grid.every(v=>v.length==width)){throw "not rectangle";}
+    let total=0;
+    for(let oy=0;oy<height;oy++)for(let ox=0;ox<width;ox++){
+        const species=grid[oy][ox];
+        if(species==".")continue;
+        let perimeter=0,sides=0,area=0,minX=ox,maxX=ox,minY=oy,maxY=oy;
+        /** @type {[number,number][]}*/
+        const stack=[[ox,oy]];
+        while(stack.length){
+            const [x,y]=stack.pop();
+            if(grid[y][x]=="%"){continue;}
+            grid[y][x]="%";++area;
+            minX=Math.min(x,minX);minY=Math.min(y,minY);maxX=Math.max(x,maxX);maxY=Math.max(y,maxY);
+            let [NW,N,NE]=(y-1>=0)?[(x-1>=0)?grid[y-1][x-1]:".",grid[y-1][x],(x+1<width)?grid[y-1][x+1]:"."]:[".",".","."];
+            let W=(x-1>=0)?grid[y][x-1]:".",E=(x+1<width)?grid[y][x+1]:".";
+            let [SW,S,SE]=(y+1<height)?[(x-1>=0)?grid[y+1][x-1]:".",grid[y+1][x],(x+1<width)?grid[y+1][x+1]:"."]:[".",".","."];
+            if(N==species){stack.push([x,y-1]);}if(E==species){stack.push([x+1,y]);}
+            if(S==species){stack.push([x,y+1]);}if(W==species){stack.push([x-1,y]);}
+            NW=(NW==species||NW=="%");N=(N==species||N=="%");NE=(NE==species||NE=="%");
+            W =(W ==species||W =="%");                       E =(E ==species||E =="%");
+            SW=(SW==species||SW=="%");S=(S==species||S=="%");SE=(SE==species||SE=="%");
+            if(!N){++perimeter;if(NW||!W){++sides;}}
+            if(!E){++perimeter;if(NE||!N){++sides;}}
+            if(!S){++perimeter;if(SE||!E){++sides;}}
+            if(!W){++perimeter;if(SW||!S){++sides;}}
+        }
+        for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){if(grid[y][x]=="%"){grid[y][x]=".";}}
+        total+=(part==1?perimeter:sides)*area;
+    }
+    return total;
+}
+
+/** @param {string} data @param {number} part */
+var d_13=(data,part)=>data.split("\n\n").map(machine=>{
+    let [_,AX,AY,BX,BY,X,Y]=machine.match(/^Button A: X\+([0-9]+), Y\+([0-9]+)\nButton B: X\+([0-9]+), Y\+([0-9]+)\nPrize: X=([0-9]+), Y=([0-9]+)$/);
+    AX=parseInt(AX);AY=parseInt(AY);BX=parseInt(BX);BY=parseInt(BY);X=parseInt(X);Y=parseInt(Y);
+    if(part==2){X+=10000000000000;Y+=10000000000000;}
+    const A_num=(X*BY-Y*BX),B_num=(Y*AX-X*AY),denom=(AX*BY-AY*BX);
+    if(denom==0){throw "none or infinite solutions.";}
+    if(A_num%denom!=0||B_num%denom!=0){return 0;}
+    const A=A_num/denom,B=B_num/denom;
+    if(A<0||B<0){return 0;}
+    if(part==1&&(A>100||B>100)){return 0;}
+    return 3*A+1*B;
+}).reduce((r,v)=>r+v);

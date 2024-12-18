@@ -328,3 +328,219 @@ var d_13=(data,part)=>data.split("\n\n").map(machine=>{
     if(part==1&&(A>100||B>100)){return 0;}
     return 3*A+1*B;
 }).reduce((r,v)=>r+v);
+
+/** @param {string} data @param {number} part */
+var d_14=(data,part)=>{
+    /** @param {number} n @param {number} d */
+    const mod=(n,d)=>{const r=n%d;return r<0?r+d:(r==0?0:r);}
+    const WIDTH=101,HEIGHT=103;
+    const robots=data.split("\n")
+        .map(v=>v.match(/^p=([0-9]+),([0-9]+) v=(-?[0-9]+),(-?[0-9]+)$/).slice(1).map(v=>parseInt(v)))
+        .map(([px,py,vx,vy])=>[mod(px,WIDTH),mod(vx,WIDTH),mod(py,HEIGHT),mod(vy,HEIGHT)]);
+    if(part==1){
+        return robots.reduce((r,[px,vx,py,vy])=>{
+            const x=(px+vx*100)%WIDTH,y=(py+vy*100)%HEIGHT;
+            if(x<50&&y<51){r[0]++;}if(x>50&&y<51){r[1]++;}
+            if(x<50&&y>51){r[2]++;}if(x>50&&y>51){r[3]++;}
+            return r;
+        },[0,0,0,0]).reduce((r,v)=>r*v,1);    
+    }else{
+        for(let i=0;i<WIDTH*HEIGHT;i+=HEIGHT){
+            console.log(i+robots.reduce((r,[px,vx,py,vy])=>{
+                r[(py+vy*i)%HEIGHT][(px+vx*i)%WIDTH]="#";
+                return r;
+            },Array(HEIGHT).fill(Array(WIDTH).fill()).map(v=>v.map(()=>" "))).map(v=>"\n"+v.join("")).join(""));
+        }
+        for(let i=parseInt(prompt("Which one looks better?"));i<WIDTH*HEIGHT;i+=WIDTH){
+            console.log(i+robots.reduce((r,[px,vx,py,vy])=>{
+                r[(py+vy*i)%HEIGHT][(px+vx*i)%WIDTH]="#";
+                return r;
+            },Array(HEIGHT).fill(Array(WIDTH).fill()).map(v=>v.map(()=>" "))).map(v=>"\n"+v.join("")).join(""));
+        }
+    }
+}
+
+/** @param {string} data @param {number} part */
+var d_15=(data,part)=>{
+    const [mapStr,moveStr]=data.split("\n\n");
+    /** @type {{[index: string]:string[]}}*/
+    const wider={"#":["#","#"],"O":["[","]"],".":[".","."],"@":["@","."]};
+    const grid=mapStr.split("\n").map(v=>v.split("").flatMap(v=>part==2?wider[v]:[v]));
+    /** @param {[number,number]} pos @param {[number,number]} dir @returns {boolean} */
+    const check=([px,py],[dx,dy])=>{
+        let cell=grid[py][px];
+        if(cell==".")return true;
+        if(cell=="#")return false;
+        if(dx==0&&cell=="["){return check([px,py+dy],[dx,dy])&&check([px+1,py+dy],[dx,dy]);}
+        if(dx==0&&cell=="]"){return check([px-1,py+dy],[dx,dy])&&check([px,py+dy],[dx,dy]);}
+        return check([px+dx,py+dy],[dx,dy]);
+    };
+    /** @param {[number,number]} pos @param {[number,number]} dir*/
+    const move=([px,py],[dx,dy])=>{
+        let cell=grid[py][px];
+        if(cell==".")return;
+        if(dx==0&&cell=="["){
+            move([px,py+dy],[dx,dy]);move([px+1,py+dy],[dx,dy]);
+            grid[py+dy][px]="[";grid[py+dy][px+1]="]";
+            grid[py][px]=".";   grid[py][px+1]=".";
+            return;
+        }
+        if(dx==0&&cell=="]"){
+            move([px-1,py+dy],[dx,dy]);move([px,py+dy],[dx,dy]);
+            grid[py+dy][px-1]="[";grid[py+dy][px]="]";
+            grid[py][px-1]=".";   grid[py][px]=".";
+            return;
+        }
+        move([px+dx,py+dy],[dx,dy]);
+        grid[py+dy][px+dx]=cell;grid[py][px]=".";
+    };
+    let pos=[-1,-1];
+    pos[1]=grid.findIndex(v=>(pos[0]=v.indexOf("@"))>=0);
+    /** @type {{[index: string]:[number,number]}}*/
+    const dirs={"^":[0,-1],">":[1,0],"v":[0,1],"<":[-1,0]};
+    moveStr.replace(/\n/g,"").split("").forEach(v=>{
+        const dir=dirs[v];
+        if(check(pos,dir)){move(pos,dir);pos[0]+=dir[0];pos[1]+=dir[1];}
+        //console.log(`Move ${v}:\n${grid.map(v=>v.join("")).join("\n")}`);
+    });
+    return grid.reduce((r,v,y)=>v.reduce((r,v,x)=>(v=="O"||v=="[")?r+y*100+x:r,r),0);
+}
+
+/** @param {string} data @param {number} part */
+var d_16=(data,part)=>{
+    const grid=data.split("\n"),width=grid[0].length,height=grid.length;
+    if(!grid.every(v=>v.length==width)){throw "not rectangle";}
+    /** @type {[number,number,"^"|">"|"v"|"<"]}*/
+    const startPos=[-1,-1,">"];startPos[1]=grid.findIndex(v=>(startPos[0]=v.indexOf("S"))>=0);
+    const best=Object.fromEntries(["^",">","v","<"].map(k=>[k,grid.map(v=>v.split("").map(()=>Infinity))]));
+    best[startPos[2]][startPos[1]][startPos[0]]=0;
+    const dirs={"^":[0,-1],">":[1,0],"v":[0,1],"<":[-1,0]};
+    const rotations={"^":["<",">"],">":["^","v"],"v":[">","<"],"<":["v","^"]};
+    const stack=[startPos];
+    while(stack.length){
+        /** @type {[number,number,"^"|">"|"v"|"<"]}*/
+        const [x,y,dir]=stack.pop();
+        const [dx,dy]=dirs[dir];
+        const myBest=best[dir][y][x];
+        if(myBest+1<best[dir][y+dy][x+dx]&&grid[y+dy][x+dx]!="#"){
+            best[dir][y+dy][x+dx]=myBest+1;
+            stack.push([x+dx,y+dy,dir]);
+        }
+        rotations[dir].forEach(dir=>{
+            if(myBest+1000<best[dir][y][x]){best[dir][y][x]=myBest+1000;stack.push([x,y,dir]);}
+        });
+    }
+    const endPos=[-1,-1];endPos[1]=grid.findIndex(v=>(endPos[0]=v.indexOf("E"))>=0);
+    if(part==1){
+        return Math.min(...["^",">","v","<"].map(v=>best[v][endPos[1]][endPos[0]]));    
+    }else{
+        const isBest=grid.map(v=>v.split("").map(()=>false));
+        stack.push(...["^",">","v","<"].map(dir=>[endPos[0],endPos[1],dir]));
+        while(stack.length){
+            /** @type {[number,number,"^"|">"|"v"|"<"]}*/
+            const [x,y,dir]=stack.pop();
+            const [dx,dy]=dirs[dir];
+            const myBest=best[dir][y][x];
+            if(myBest-1==best[dir][y-dy][x-dx]&&grid[y-dy][x-dx]!="#"){
+                isBest[y][x]=true;stack.push([x-dx,y-dy,dir]);
+            }
+            rotations[dir].forEach(dir=>{
+                if(myBest-1000==best[dir][y][x]){isBest[y][x]=true;stack.push([x,y,dir]);}
+            });
+        }
+        return isBest.reduce((r,v)=>v.reduce((r,v)=>r+(v?1:0),r),0);
+    }
+}
+
+/** @param {string} data @param {number} part */
+var d_17=(data,part)=>{
+    /** @type {string[]}*/
+    const [_,A_str,B_str,C_str,prog_str]=data.match(/Register A: ([0-9]+)\nRegister B: ([0-9]+)\nRegister C: ([0-9]+)\n\nProgram: ([0-9,]+)/);
+    const prog_num=prog_str.split(",").map(v=>parseInt(v));
+    console.log(prog_num.map((v,i,a)=>{
+        if(i&1){return "";}
+        if(i&1==0&&v==3&&a[i+1]&1!=0){throw "misaligned jump";}
+        let op=a[i+1];
+        return "\n"+[
+            `A>>=${"0123ABC"[op]}`, // adv
+            `B^=${op}`, // bxl
+            ["B=0","B=1","B=2","B=3","B=A&7","B&=7","B=C&7"][op], // bst
+            `if(A!=0) GOTO ${op/2}`,// jnz
+            "B^=C", // bxc
+            "OUT "+["0","1","2","3","A&7","B&7","C&7"][op],// out
+            `B=A>>${"0123ABC"[op]}`, // bdv
+            `C=A>>${"0123ABC"[op]}` // cdv
+        ][v]+";";
+    }).join(""));
+    if(part==1){
+        let A=parseInt(A_str),B=parseInt(B_str),C=parseInt(C_str),PC=0;
+        /** @type {number[]}*/
+        const output=[];
+        const combo=[()=>0,()=>1,()=>2,()=>3,()=>A,()=>B,()=>C,()=>{throw "invalid operand";}];
+        const prog=prog_num.map((v,i,a)=>{
+            let op=a[i+1];
+            return [
+                ()=>{A=A>>combo[op]();},// adv
+                ()=>{B^=op;},// bxl
+                ()=>{B=combo[op]()&7;},// bst
+                ()=>{if(A!=0){PC=op-2;}},// jnz
+                ()=>{B^=C;},// bxc
+                ()=>{output.push(combo[op]()&7);},// out
+                ()=>{B=A>>combo[op]();},// bdv
+                ()=>{C=A>>combo[op]();}// cdv
+            ][v];
+        });
+        while(PC<prog.length-1){prog[PC]();PC+=2;}
+        return output.join(",");
+    }
+    return prog_num.reduceRight((r,v)=>r.flatMap(r=>Array(8).fill().map((_,i)=>(r<<3n)+BigInt(i))).filter(A=>{
+        let B=Number(A&7n)^prog_num[3];
+        return v==(B^prog_num[9]^Number((A>>BigInt(B))&7n));
+    }),[0n])[0];
+}
+
+/** @param {string} data @param {number} part */
+var d_18=(data,part)=>{
+    const SIZE=70;
+    const grid=Array(SIZE+1).fill().map((_1,_2,a)=>a.map(()=>"."));
+    const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+    if(part==1){
+        data.split("\n").slice(0,1024).forEach(v=>{
+            const [x,y]=v.split(",");
+            grid[parseInt(y)][parseInt(x)]="#";
+        });
+        const best=grid.map(()=>grid.map(()=>Infinity));
+        best[0][0]=0;
+        const stack=[[0,0]];
+        while(stack.length){
+            /** @type {[number,number]}*/
+            const [x,y]=stack.pop();
+            const myBest=best[y][x];
+            dirs.map(([dx,dy])=>[x+dx,y+dy]).forEach(([x,y])=>{
+                if(0<=x&&x<=SIZE&&0<=y&&y<=SIZE&&myBest+1<best[y][x]&&grid[y][x]!="#"){
+                    best[y][x]=myBest+1;
+                    stack.push([x,y]);
+                }
+            })
+        }
+        return best[SIZE][SIZE];
+    }else{
+        return data.split("\n").find(v=>{
+            const [x,y]=v.split(",");
+            grid[parseInt(y)][parseInt(x)]="#";
+            const unreachable=grid.map(()=>grid.map(()=>true));
+            unreachable[0][0]=false;
+            const stack=[[0,0]];
+            while(stack.length){
+                /** @type {[number,number]}*/
+                const [x,y]=stack.pop();
+                dirs.map(([dx,dy])=>[x+dx,y+dy]).forEach(([x,y])=>{
+                    if(0<=x&&x<=SIZE&&0<=y&&y<=SIZE&&unreachable[y][x]&&grid[y][x]!="#"){
+                        unreachable[y][x]=false;stack.push([x,y]);
+                    }
+                })
+            }
+            return unreachable[SIZE][SIZE];
+        });
+    }
+}

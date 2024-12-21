@@ -521,7 +521,7 @@ var d_18=(data,part)=>{
                     best[y][x]=myBest+1;
                     stack.push([x,y]);
                 }
-            })
+            });
         }
         return best[SIZE][SIZE];
     }else{
@@ -538,9 +538,83 @@ var d_18=(data,part)=>{
                     if(0<=x&&x<=SIZE&&0<=y&&y<=SIZE&&unreachable[y][x]&&grid[y][x]!="#"){
                         unreachable[y][x]=false;stack.push([x,y]);
                     }
-                })
+                });
             }
             return unreachable[SIZE][SIZE];
         });
     }
 }
+
+/** @param {string} data @param {number} part */
+var d_19=(data,part)=>{
+    const [towelsStr,patterns]=data.split("\n\n");
+    const towels=towelsStr.split(", ");
+    const stateSlots=towels.reduce((r,v)=>r+v.length-1,1);
+    return patterns.split("\n").reduce((r,pattern)=>{
+        let sucesses=pattern.split("").reduce((prevState,char)=>{
+            const nextState=Array(stateSlots).fill().map(()=>0);
+            towels.reduce((shift,v)=>{
+                if(v.length==1){if(v==char){nextState[0]+=prevState[0];}return shift;}
+                if(v[0]==char){nextState[shift]+=prevState[0];}
+                for(let i=1;i<v.length-1;i++){
+                    if(v[i]==char){nextState[shift+i]+=prevState[shift+i-1];}
+                }
+                if(v[v.length-1]==char){nextState[0]+=prevState[shift+v.length-2];}
+                return shift+v.length-1;
+            },1);
+            return nextState;
+        },Array(stateSlots).fill().map(()=>0).fill(1,0,1))[0];
+        return r+(part==1?(sucesses>0?1:0):sucesses);
+    },0);
+}
+/** @param {string} data @param {number} part */
+var d_20=(data,part)=>{
+    const grid=data.split("\n"),width=grid[0].length,height=grid.length;
+    if(!grid.every(v=>v.length==width)){throw "not rectangle";}
+    /** @type {[number,number]}*/
+    const startPos=[-1,-1];startPos[1]=grid.findIndex(v=>(startPos[0]=v.indexOf("S"))>=0);
+    const startDists=grid.map(v=>v.split("").map(()=>Infinity));
+    startDists[startPos[1]][startPos[0]]=0;
+    const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+    const stack=[startPos];
+    while(stack.length){
+        /** @type {[number,number]}*/
+        const [x,y]=stack.pop();
+        const myDist=startDists[y][x];
+        dirs.map(([dx,dy])=>[x+dx,y+dy]).forEach(([x,y])=>{
+            if(0<=x&&x<width&&0<=y&&y<height&&myDist+1<startDists[y][x]&&grid[y][x]!="#"){
+                startDists[y][x]=myDist+1;
+                stack.push([x,y]);
+            }
+        });
+    }
+    const endPos=[-1,-1];endPos[1]=grid.findIndex(v=>(endPos[0]=v.indexOf("E"))>=0);
+    const endDists=grid.map(v=>v.split("").map(()=>Infinity));
+    endDists[endPos[1]][endPos[0]]=0;
+    stack.push(endPos);
+    while(stack.length){
+        /** @type {[number,number]}*/
+        const [x,y]=stack.pop();
+        const myDist=endDists[y][x];
+        dirs.map(([dx,dy])=>[x+dx,y+dy]).forEach(([x,y])=>{
+            if(0<=x&&x<width&&0<=y&&y<height&&myDist+1<endDists[y][x]&&grid[y][x]!="#"){
+                endDists[y][x]=myDist+1;
+                stack.push([x,y]);
+            }
+        });
+    }
+    const boringDist=endDists[startPos[1]][startPos[0]],MAX_CHEAT=(part==1?2:20);
+    let count=0;
+    grid.forEach((v,y1)=>v.split("").forEach((v,x1)=>{
+        if(v=="#"){return;}
+        const startDist=startDists[y1][x1];
+        for(let dx=-MAX_CHEAT;dx<=MAX_CHEAT;dx++)for(let dy=-MAX_CHEAT;dy<=MAX_CHEAT;dy++){
+            const x2=x1+dx,y2=y1+dy,cheatDist=Math.abs(dx)+Math.abs(dy);
+            if(0<=x2&&x2<width&&0<=y2&&y2<height&&grid[y2][x2]!="#"&&cheatDist<=MAX_CHEAT){
+                const cheaterDist=startDist+cheatDist+endDists[y2][x2];
+                if(boringDist-cheaterDist>=100){count++;}
+            }
+        }
+    }));
+    return count;
+};

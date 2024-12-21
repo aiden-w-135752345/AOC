@@ -618,3 +618,126 @@ var d_20=(data,part)=>{
     }));
     return count;
 };
+
+var d_21=(data,part)=>{
+    /** @typedef {"^"|">"|"v"|"<"} direction */
+    /** @typedef {direction|"A"} directionKey */
+    /** @typedef {directionKey|" "} directionKeyBlank */
+    /** @typedef {"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"0"|"A"} numericKey */
+    /** @typedef {numericKey|" "} numericKeyBlank */
+    /** @type {Record<direction,Record<numericKeyBlank,numericKeyBlank>>} */
+    /** @type {direction[]} */
+    const directions=["^",">","v","<"];
+    /** @type {directionKey[]} */
+    const directionKeys=["^",">","v","<","A"];
+    /** @type {numericKey[]} */
+    const numericKeys=["0","1","2","3","4","5","6","7","8","9","A"];
+    /** @type {Record<direction,Record<directionKeyBlank,directionKeyBlank>>} */
+    const directionalTransitions={
+        "^":{
+            " ":" ","^":" ","A":" ",
+            "<":" ","v":"^",">":"A"
+        },">":{
+            " ":" ","^":"A","A":" ",
+            "<":"v","v":">",">":" "
+        },"v":{
+            " ":" ","^":"v","A":">",
+            "<":" ","v":" ",">":" "
+        },
+        "<":{
+            " ":" ","^":" ","A":"^",
+            "<":" ","v":"<",">":"v"
+        }
+    };
+    /** @type {Record<direction,Record<numericKeyBlank,numericKeyBlank>>} */
+    const numericTransitions={
+        "^":{
+            "7":" ","8":" ","9":" ",
+            "4":"7","5":"8","6":"9",
+            "1":"4","2":"5","3":"6",
+            " ":" ","0":"2","A":"3"
+        },">":{
+            "7":"8","8":"9","9":" ",
+            "4":"5","5":"6","6":" ",
+            "1":"2","2":"3","3":" ",
+            " ":" ","0":"A","A":" "
+        },"v":{
+            "7":"4","8":"5","9":"6",
+            "4":"1","5":"2","6":"3",
+            "1":" ","2":"0","3":"A",
+            " ":" ","0":" ","A":" "
+        },
+        "<":{
+            "7":" ","8":"7","9":"8",
+            "4":" ","5":"4","6":"5",
+            "1":" ","2":"1","3":"2",
+            " ":" ","0":" ","A":"0"
+        }
+    };
+    /** @type {Record<directionKey,Record<directionKey,number>>} */
+    const initialOptimum=Object.fromEntries(directionKeys.map(start=>{
+        /** @type {Record<directionKey,number>} */
+        const best=Object.fromEntries(directionKeys.map(k=>[k,Infinity]));
+        best[start]=0;
+        const stack=[start];
+        while(stack.length){
+            const prev=stack.pop(),nextBest=best[prev]+1;
+            Object.values(directionalTransitions).forEach(transition=>{
+                const next=transition[prev];
+                if(next!=" "&&nextBest<best[next]){best[next]=nextBest;stack.push(next);}
+            });
+        }
+        return [start,Object.fromEntries(directionKeys.map(end=>[end,best[end]]))];
+    }));
+    
+    const directionalOptimum=Array(part==1?1:24).fill().reduce(/** @param {typeof initialOptimum} prevOptimum */prevOptimum=>{
+        /** @type {typeof initialOptimum} */
+        const nextOptimum=Object.fromEntries(directionKeys.map(start=>{
+            /** @type {Record<directionKey,Record<directionKey,number>>} */
+            const best=Object.fromEntries(directionKeys.map(k=>[k,Object.fromEntries(directionKeys.map(k=>[k,Infinity]))]));
+            best[start]["A"]=0;
+            /** @type {[directionKey,directionKey][]} */
+            const stack=[[start,"A"]];
+            while(stack.length){
+                /** @type {[directionKey,directionKey]} */
+                const [a,b]=stack.pop();
+                const prevBest=best[a][b];
+                if(b!="A"){
+                    const nextA=directionalTransitions[b][a];
+                    if(nextA!=" "&&prevBest+1<best[nextA][b]){best[nextA][b]=prevBest+1;stack.push([nextA,b]);}
+                }
+                Object.entries(prevOptimum[b]).forEach(([nextB,dist])=>{
+                    if(prevBest+dist<best[a][nextB]){best[a][nextB]=prevBest+dist;stack.push([a,nextB]);}
+                });
+            }
+            return [start,Object.fromEntries(directionKeys.map(end=>[end,best[end]["A"]]))];
+        }));
+        return nextOptimum;
+    },initialOptimum);
+    /** @type {Record<numericKey,Record<numericKey,number>>} */
+    const numericOptimum=Object.fromEntries(numericKeys.map(start=>{
+        /** @type {Record<numericKey,Record<directionKey,number>>} */
+        const best=Object.fromEntries(numericKeys.map(k=>[k,Object.fromEntries(directionKeys.map(k=>[k,Infinity]))]));
+        best[start]["A"]=0;
+        /** @type {[numericKey,directionKey][]} */
+        const stack=[[start,"A"]];
+        while(stack.length){
+            /** @type {[numericKey,directionKey]} */
+            const [a,b]=stack.pop();
+            const prevBest=best[a][b];
+            if(b!="A"){
+                const nextA=numericTransitions[b][a];
+                if(nextA!=" "&&prevBest+1<best[nextA][b]){best[nextA][b]=prevBest+1;stack.push([nextA,b]);}
+            }
+            Object.entries(directionalOptimum[b]).forEach(([nextB,dist])=>{
+                if(prevBest+dist<best[a][nextB]){best[a][nextB]=prevBest+dist;stack.push([a,nextB]);}
+            });
+        }
+        return [start,Object.fromEntries(numericKeys.map(end=>[end,best[end]["A"]]))];
+    }));
+    return data.split("\n").reduce(/** @param {string&{readonly [i: number]: numericKey;}} v*/(r,v)=>{
+        let shortest=numericOptimum["A"][v[0]]+v.length;
+        for(let i=1;i<v.length;i++){shortest+=numericOptimum[v[i-1]][v[i]];}
+        return r+parseInt(v.slice(0,-1))*shortest;
+    },0);
+};

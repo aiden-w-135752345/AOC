@@ -770,3 +770,39 @@ var d_22=(data,part)=>{
     const keys=Array.from(new Set(maps.values().flatMap(v=>v.keys())));
     return keys.reduce((r,k)=>Math.max(r,maps.reduce((r,v)=>r+(v.get(k)||0),0)),0);
 };
+
+/** @param {string} data @param {number} part */
+var d_23=(data,part)=>{
+    /** @type {Map<string,Set<string>>} */
+    const adj=new Map;
+    data.split("\n").forEach(v=>{
+        const [a,b]=v.split("-");
+        const aNode=adj.get(a)||new Set,bNode=adj.get(b)||new Set;
+        adj.set(a,aNode);adj.set(b,bNode);
+        aNode.add(b);bNode.add(a);
+    });
+    if(part==1){
+        const keys=adj.keys().filter(k=>k[0]=="t");
+        const triples=new Set(keys.flatMap(k1=>{
+            const a1=adj.get(k1);
+            return a1.values().flatMap(k2=>a1.intersection(adj.get(k2)).values().map(k3=>[k1,k2,k3].sort().join(",")));
+        }));
+        return triples.size;
+    }else{
+        const sortedKeys=adj.keys().toArray().sort();
+        /** @type {Set<string>} */const includedSet=new Set();
+        /** @type {number[]} */const includedList=[];
+        /** @type {string[]} */let best=[];
+        /** @param {number} last */
+        let rec=last=>{for(let i=last+1;i<sortedKeys.length;i++){
+            const k=sortedKeys[i];
+            if(!adj.get(k).isSupersetOf(includedSet)){continue;}
+            includedList.push(i);includedSet.add(k);
+            if(includedList.length>best.length){best=includedList.map(i=>sortedKeys[i]);console.log("new best: ",best);}
+            rec(i);
+            includedList.pop();includedSet.delete(k);
+        }};
+        rec(0);
+        return best.join();
+    }
+};

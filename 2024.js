@@ -806,3 +806,36 @@ var d_23=(data,part)=>{
         return best.join();
     }
 };
+
+/** @param {string} data @param {number} part */
+var d_24=(data,part)=>{
+    const [initialValuesStr,gatesStr]=data.split("\n\n");
+    const knownValues=new Map(initialValuesStr.split("\n").map(v=>[v.split(": ")[0],/^([^ ]*): 1$/.test(v)]));
+    /** @type {Map<string,Set<string>>} */
+    const outputSets=new Map(knownValues.keys().map(v=>[v,new Set()]));
+    const gates=new Map(gatesStr.split("\n").map(v=>{
+        /** @type {string[]} */
+        const [_,a,op,b,dest]=v.match(/^([^ ]*) (AND|OR|XOR) ([^ ]*) -> ([^ ]*)$/);
+        const aSet=outputSets.get(a)||new Set,bSet=outputSets.get(b)||new Set;
+        aSet.add(dest);bSet.add(dest);
+        outputSets.set(a,aSet);outputSets.set(b,bSet);
+        outputSets.set(dest,outputSets.get(dest)||new Set);
+        return [dest,{op,a,b}];
+    }));
+    if(part==1){
+        const stack=knownValues.keys().toArray();
+        while(stack.length){outputSets.get(stack.pop()).forEach(dest=>{
+            const gate=gates.get(dest);
+            if(knownValues.has(gate.a)&&knownValues.has(gate.b)&&!knownValues.has(dest)){
+                const A=knownValues.get(gate.a),B=knownValues.get(gate.b);
+                knownValues.set(dest,{AND:A&&B,OR:A||B,XOR:A!=B}[gate.op]);
+                stack.push(dest);
+            }
+        });}
+        return knownValues.keys().filter(v=>v.match(/^z[0-9]+$/))
+            .reduce((r,v)=>r+((knownValues.get(v)?1n:0n)<<BigInt(v.slice(1))),0n);
+    }else{
+        // worked out by hand in 2024-24.txt, .gitignored
+        return prompt("bad pairs").split(",").sort().join(",");
+    }
+};

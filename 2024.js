@@ -839,3 +839,20 @@ var d_24=(data,part)=>{
         return prompt("bad pairs").split(",").sort().join(",");
     }
 };
+
+/** @param {string} data @param {number} part */
+var d_25=(data,part)=>{
+    const grids=data.split("\n\n").filter((v,i,a)=>i==a.indexOf(v))
+        .map(v=>v.split("\n").map(v=>v.split("").map(v=>v=="#")));
+    const width=grids[0][0].length,height=grids[0].length;
+    if(!grids.every(v=>v.length==height&&v.every(v=>v.length==width)))
+        {throw "not rectangle";}
+    const keys=grids.filter(v=>!v[0].includes(true));
+    const locks=grids.filter(v=>!v[0].includes(false));
+    return keys.reduce((r,v1)=>locks.reduce((r,v2)=>{
+        for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+            if(v1[y][x]&&v2[y][x]){return r;}
+        }
+        return r+1;
+    },r),0);
+};
